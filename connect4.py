@@ -5,7 +5,7 @@ import pygame
 
 COLUMN_COUNT = 7
 ROW_COUNT = 6
-DIFFICULTY_LVL = 6
+DIFFICULTY_LVL = 8
 
 SQUARESIZE = 100
 WIDTH = COLUMN_COUNT * SQUARESIZE
@@ -20,7 +20,7 @@ HUMAN_PLAYER = 1
 AI_PLAYER = 2
 
 def score_pawns(pawns, player):
-    return (pawns * 2) * player
+    return (pawns * 2 * player) + (pawns / 2)
 
 def is_full(board):
     for col in range(COLUMN_COUNT):
@@ -33,29 +33,54 @@ def count_pawns(board):
 
 def evaluation(board):
     if check_win(board, AI_PLAYER):
-        return 999999
+        return 999999 + count_pawns(board)
     elif is_full(board):
         return 0
     elif check_win(board, HUMAN_PLAYER):
-        return -999999
+        return -999999 - count_pawns(board)
     else:
         score = 0
-        for col in range(COLUMN_COUNT):
-            pawns = 0
-            player = 0
+
+        for col in range(COLUMN_COUNT-3):
             for row in range(ROW_COUNT):
-                if board[row][col] != 0:
-                    pawns += 1
-                    player = board[row][col] == AI_PLAYER and player + 1 or player - 1
-            score += score_pawns(pawns, player)
-        for row in range(ROW_COUNT):
-            pawns = 0
-            player = 0
-            for col in range(COLUMN_COUNT):
-                if board[row][col] != 0:
-                    pawns += 1
-                    player = board[row][col] == AI_PLAYER and player + 1 or player - 1
-            score += score_pawns(pawns, player)
+                pawns = 0
+                player = 0
+                for i in range(3):
+                    if board[row][col+i] != 0:
+                        pawns += 1
+                        player = board[row][col+i] == AI_PLAYER and player + 1 or player - 1
+                score += score_pawns(pawns, player)
+
+        for col in range(COLUMN_COUNT):
+            for row in range(ROW_COUNT-3):
+                pawns = 0
+                player = 0
+                for i in range(3):
+                    if board[row+i][col] != 0:
+                        pawns += 1
+                        player = board[row+i][col] == AI_PLAYER and player + 1 or player - 1
+                score += score_pawns(pawns, player)
+
+        for col in range(COLUMN_COUNT-3):
+            for row in range(ROW_COUNT-3):
+                pawns = 0
+                player = 0
+                for i in range(3):
+                    if board[row+i][col+i] != 0:
+                        pawns += 1
+                        player = board[row+i][col+i] == AI_PLAYER and player + 1 or player - 1
+                score += score_pawns(pawns, player)
+
+        for col in range(COLUMN_COUNT-3):
+            for row in range(3, ROW_COUNT):
+                pawns = 0
+                player = 0
+                for i in range(3):
+                    if board[row-i][col+i] != 0:
+                        pawns += 1
+                        player = board[row-i][col+i] == AI_PLAYER and player + 1 or player - 1
+                score += score_pawns(pawns, player)
+
         return score
 
 def calc_max(board, depth, alpha, beta):
@@ -110,6 +135,7 @@ def play(board, depth):
                 alpha = tmp
                 bestCol = col
             board = cancel(board, col)
+        print("Col " + str(col) + " = " + str(tmp))
     tmpBoard = board
     tmpBoard = drop_piece(tmpBoard, get_row(tmpBoard, bestCol), bestCol, AI_PLAYER)
     if check_win(tmpBoard, AI_PLAYER) == False and DIFFICULTY_LVL >= 5:
@@ -120,7 +146,6 @@ def play(board, depth):
     else:
         tmpBoard = cancel(tmpBoard, bestCol)
     board = drop_piece(board, get_row(board, bestCol), bestCol, AI_PLAYER)
-    print("Ai played column " + str(bestCol) + ".")
     return board
 
 def create_board():
